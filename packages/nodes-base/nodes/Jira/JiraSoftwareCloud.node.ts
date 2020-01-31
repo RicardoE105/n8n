@@ -15,7 +15,7 @@ import {
 	validateJSON,
 } from './GenericFunctions';
 import {
-	issueOpeations,
+	issueOperations,
 	issueFields,
 } from './IssueDescription';
 import {
@@ -62,7 +62,7 @@ export class JiraSoftwareCloud implements INodeType {
 				default: 'issue',
 				description: 'Resource to consume.',
 			},
-			...issueOpeations,
+			...issueOperations,
 			...issueFields,
 		],
 	};
