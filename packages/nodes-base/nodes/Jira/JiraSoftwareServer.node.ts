@@ -75,11 +75,11 @@ export class JiraSoftwareServer implements INodeType {
 				const returnData: INodePropertyOptions[] = [];
 				let projects;
 				try {
-					projects = await jiraSoftwareServerApiRequest.call(this, '/project/search', 'GET');
+					projects = await jiraSoftwareServerApiRequest.call(this, '/project', 'GET');
 				} catch (err) {
 					throw new Error(`Jira Error: ${err}`);
 				}
-				for (const project of projects.values) {
+				for (const project of projects) {
 					const projectName = project.name;
 					const projectId = project.id;
 
