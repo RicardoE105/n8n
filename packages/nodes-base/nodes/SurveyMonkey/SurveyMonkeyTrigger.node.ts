@@ -20,8 +20,15 @@ import {
 } from './GenericFunctions';
 
 import {
+	IAnswer,
+	IChoice,
+	IQuestion,
+	IRow,
+} from './Interfaces';
+
+import {
 	createHmac,
- } from 'crypto';
+} from 'crypto';
 
 export class SurveyMonkeyTrigger implements INodeType {
 	description: INodeTypeDescription = {
@@ -219,6 +226,20 @@ export class SurveyMonkeyTrigger implements INodeType {
 				default: true,
 				description: 'By default the webhook-data only contain the IDs. If this option gets activated it<br />will resolve the data automatically.',
 			},
+			{
+				displayName: 'Only Answers',
+				name: 'onlyAnswers',
+				displayOptions: {
+					show: {
+						resolveData: [
+							true,
+						],
+					},
+				},
+				type: 'boolean',
+				default: true,
+				description: 'Returns only the answers of the form and not any of the other data.',
+			},
 		],
 	};
 
@@ -400,6 +421,12 @@ export class SurveyMonkeyTrigger implements INodeType {
 				let responseData = JSON.parse(data.join(''));
 				let endpoint = '';
 
+				let returnItem: INodeExecutionData[] = [
+					{
+						json: responseData,
+					}
+				];
+
 				if (event === 'response_completed') {
 					const resolveData = this.getNodeParameter('resolveData') as boolean;
 					if (resolveData) {
@@ -409,18 +436,159 @@ export class SurveyMonkeyTrigger implements INodeType {
 							endpoint = `/collectors/${responseData.resources.collector_id}/responses/${responseData.object_id}/details`;
 						}
 						responseData = await surveyMonkeyApiRequest.call(this, 'GET', endpoint);
+						const surveyId = responseData.survey_id;
+
+						const questions: IQuestion[] = [];
+						const answers = new Map<string, IAnswer[]>();
+
+						const { pages } = await surveyMonkeyApiRequest.call(this, 'GET', `/surveys/${surveyId}/details`);
+
+						for (const page of pages) {
+							questions.push.apply(questions, page.questions);
+						}
+
+						for (const page of responseData.pages as IDataObject[]) {
+							for (const question of page.questions as IDataObject[]) {
+								answers.set(question.id as string, question.answers as IAnswer[]);
+							}
+						}
+
+						const responseQuestions = new Map<string, number | string | string[] | IDataObject>();
+
+						for (const question of questions) {
+
+							/*
+							TODO add support for premiun companents
+							- File Upload
+							- Matrix of dropdowm menus
+							*/
+
+							const heading = question.headings![0].heading as string;
+
+							if (question.family === 'open_ended' || question.family === 'datetime') {
+								if (question.subtype !== 'multi') {
+									responseQuestions.set(heading, answers.get(question.id)![0].text as string);
+								} else {
+
+									const results: IDataObject = {};
+									const keys = (question.answers.rows as IRow[]).map(e => e.text) as string[];
+									const values = answers.get(question.id)?.map(e => e.text) as string[];
+									for (let i = 0; i < keys.length; i++) {
+										// if for some reason there are questions texts repeted add the index to the key
+										if (results[keys[i]] !== undefined) {
+											results[`${keys[i]}(${i})`] = values[i] || '';
+										} else {
+											results[keys[i]] = values[i] || '';
+										}
+									}
+									responseQuestions.set(heading, results);
+								}
+							}
+
+							if (question.family === 'single_choice') {
+								const choiceId = answers.get(question.id)![0].choice_id;
+								const choice = (question.answers.choices as IChoice[])
+												.filter(e => e.id === choiceId)[0];
+								// if has the property image it's a single_choice with images
+								if (choice.image) {
+									responseQuestions.set(heading, choice.image!.url);
+								} else {
+									responseQuestions.set(heading, choice.text);
+								}
+							}
+
+							if (question.family === 'multiple_choice') {
+								const choiceIds = answers.get(question.id)?.map((e) => e.choice_id);
+								const value = (question.answers.choices as IChoice[])
+												.filter(e => choiceIds?.includes(e.id))
+												.map(e => e.text) as string[];
+								responseQuestions.set(heading, value);
+							}
+
+							if (question.family === 'matrix') {
+								// if more than one row it's a matrix/rating-scale
+								const rows = question.answers.rows as IRow[];
+
+								if (rows.length > 1) {
+
+									const results: IDataObject = {};
+									const choiceIds = answers.get(question.id)?.map(e => e.choice_id) as string[];
+									const rowIds = answers.get(question.id)?.map(e => e.row_id) as string[];
+
+									const rowsValues = (question.answers.rows as IRow[])
+														.filter(e => rowIds!.includes(e.id as string))
+														.map(e => e.text);
+
+									const choicesValues = (question.answers.choices as IChoice[])
+															.filter(e => choiceIds!.includes(e.id as string))
+															.map(e => e.text);
+
+									for (let i = 0; i < rowsValues.length; i++) {
+										results[rowsValues[i]] = choicesValues[i] || '';
+									}
+
+									// add the rows that were not answered
+									for (const row of question.answers.rows as IDataObject[]) {
+										if (!rowIds.includes(row.id as string)) {
+											results[row.text as string] = '';
+										}
+									}
+
+									responseQuestions.set(heading, results);
+
+								} else {
+									const choiceIds = answers.get(question.id)?.map((e) => e.choice_id);
+									const value = (question.answers.choices as IChoice[])
+													.filter(e => choiceIds!.includes(e.id as string))
+													.map(e =>  (e.text === '') ? e.weight : e.text)[0];
+									responseQuestions.set(heading, value);
+								}
+							}
+
+							if (question.family === 'demographic') {
+								const rows: IDataObject = {};
+								for (const row of answers.get(question.id) as IAnswer[]) {
+									rows[row.row_id as string] = row.text;
+								}
+								const addressInfo: IDataObject = {};
+								for (const answer of question.answers.rows as IDataObject[]) {
+									addressInfo[answer.type as string] = rows[answer.id as string] || '';
+								}
+								responseQuestions.set(heading, addressInfo);
+							}
+
+							if (question.family === 'presentation') {
+								if (question.subtype === 'image') {
+									const { url } = question.headings![0].image as IDataObject;
+									responseQuestions.set(heading, url as string);
+								}
+							}
+						}
+						delete responseData.pages;
+						responseData.questions = {};
+
+						// Map the "Map" to JSON
+						const tuples = JSON.parse(JSON.stringify([...responseQuestions]));
+						for (const [key, value] of tuples) {
+							responseData.questions[key] = value;
+						}
+
+						const onlyAnswers = this.getNodeParameter('onlyAnswers') as boolean;
+						if (onlyAnswers) {
+							responseData = responseData.questions;
+						}
+
+						returnItem = [
+							{
+								json: responseData,
+							}
+						];
 					}
 				}
 
-				const returnItem: INodeExecutionData = {
-					json: responseData,
-				};
-
 				return resolve({
 					workflowData: [
-						[
-							returnItem,
-						],
+						returnItem,
 					],
 				});
 			});
