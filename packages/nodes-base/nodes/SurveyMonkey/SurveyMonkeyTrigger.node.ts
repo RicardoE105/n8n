@@ -24,11 +24,13 @@ import {
 	IChoice,
 	IQuestion,
 	IRow,
+	IOther,
 } from './Interfaces';
 
 import {
 	createHmac,
 } from 'crypto';
+import { attachmentOperations } from '../Trello/AttachmentDescription';
 
 export class SurveyMonkeyTrigger implements INodeType {
 	description: INodeTypeDescription = {
@@ -233,6 +235,9 @@ export class SurveyMonkeyTrigger implements INodeType {
 					show: {
 						resolveData: [
 							true,
+						],
+						event: [
+							'response_completed',
 						],
 					},
 				},
@@ -486,14 +491,21 @@ export class SurveyMonkeyTrigger implements INodeType {
 							}
 
 							if (question.family === 'single_choice') {
-								const choiceId = answers.get(question.id)![0].choice_id;
-								const choice = (question.answers.choices as IChoice[])
-												.filter(e => e.id === choiceId)[0];
-								// if has the property image it's a single_choice with images
-								if (choice.image) {
-									responseQuestions.set(heading, choice.image!.url);
+								const other = question.answers.other as IOther;
+
+								if (other && other.visible && other.is_answer_choice && answers.get(question.id)![0].other_id) {
+									responseQuestions.set(heading, answers.get(question.id)![0].text as string);
+
 								} else {
-									responseQuestions.set(heading, choice.text);
+									const choiceId = answers.get(question.id)![0].choice_id;
+									const choice = (question.answers.choices as IChoice[])
+													.filter(e => e.id === choiceId)[0];
+									// if has the property image it's a single_choice with images
+									if (choice.image !== undefined) {
+										responseQuestions.set(heading, choice.image!.url);
+									} else {
+										responseQuestions.set(heading, choice.text);
+									}
 								}
 							}
 
@@ -542,6 +554,19 @@ export class SurveyMonkeyTrigger implements INodeType {
 													.filter(e => choiceIds!.includes(e.id as string))
 													.map(e =>  (e.text === '') ? e.weight : e.text)[0];
 									responseQuestions.set(heading, value);
+
+									// if "Add an Other Answer Option for Comments" is active then add comment to the answer
+									const other = question.answers.other as IOther;
+									if (other !== undefined && other.visible) {
+										const response: IDataObject = {};
+										const questionName = (question.answers.other as IOther).text as string;
+										//console.log(questionName);
+										//console.log(answers.get(question.id)?.filter((e) => e.other_id));
+										const text = answers.get(question.id)?.filter((e) => e.other_id)[0].text;
+										response.value = value;
+										response[questionName] = text;
+										responseQuestions.set(heading, response);
+									}
 								}
 							}
 

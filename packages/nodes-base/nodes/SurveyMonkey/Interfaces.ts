@@ -23,6 +23,12 @@ export interface IRow {
 	id: string;
 }
 
+export interface IOther {
+	text: string;
+	visible: boolean;
+	is_answer_choice: boolean;
+}
+
 export interface IQuestion {
 	id: string;
 	family?: string;
@@ -36,4 +42,5 @@ export interface IAnswer {
 	choice_id: string;
 	row_id?: string;
 	text?: string;
+	other_id?: string;
 }
