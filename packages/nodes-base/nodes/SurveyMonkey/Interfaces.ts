@@ -27,6 +27,7 @@ export interface IOther {
 	text: string;
 	visible: boolean;
 	is_answer_choice: boolean;
+	id: string;
 }
 
 export interface IQuestion {

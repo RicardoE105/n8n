@@ -492,28 +492,39 @@ export class SurveyMonkeyTrigger implements INodeType {
 
 							if (question.family === 'single_choice') {
 								const other = question.answers.other as IOther;
-
 								if (other && other.visible && other.is_answer_choice && answers.get(question.id)![0].other_id) {
 									responseQuestions.set(heading, answers.get(question.id)![0].text as string);
+
+								} else if (other && other.visible && !other.is_answer_choice){
+									const choiceId = answers.get(question.id)![0].choice_id;
+
+									const choice = (question.answers.choices as IChoice[])
+													.filter(e => e.id === choiceId)[0];
+
+													const comment = answers.get(question.id)
+									?.find(e => e.other_id === other.id)?.text as string;
+									responseQuestions.set(heading, { value: choice.text, comment });
 
 								} else {
 									const choiceId = answers.get(question.id)![0].choice_id;
 									const choice = (question.answers.choices as IChoice[])
 													.filter(e => e.id === choiceId)[0];
-									// if has the property image it's a single_choice with images
-									if (choice.image !== undefined) {
-										responseQuestions.set(heading, choice.image!.url);
-									} else {
-										responseQuestions.set(heading, choice.text);
-									}
+									responseQuestions.set(heading, choice.text);
 								}
 							}
 
 							if (question.family === 'multiple_choice') {
+								const other = question.answers.other as IOther;
 								const choiceIds = answers.get(question.id)?.map((e) => e.choice_id);
 								const value = (question.answers.choices as IChoice[])
 												.filter(e => choiceIds?.includes(e.id))
 												.map(e => e.text) as string[];
+								// if "Add an "Other" Answer Option for Comments" is active and was selected
+								if (other && other.is_answer_choice && other.visible) {
+									const text = answers.get(question.id)
+												?.find(e => e.other_id === other.id)?.text as string;
+									value.push(text);
+								}
 								responseQuestions.set(heading, value);
 							}
 
@@ -545,6 +556,11 @@ export class SurveyMonkeyTrigger implements INodeType {
 											results[row.text as string] = '';
 										}
 									}
+									// the comment then add the comment
+									const other = question.answers.other as IOther;
+									if (other !== undefined && other.visible) {
+										results.comment = answers.get(question.id)?.filter((e) => e.other_id)[0].text;
+									}
 
 									responseQuestions.set(heading, results);
 
@@ -559,12 +575,10 @@ export class SurveyMonkeyTrigger implements INodeType {
 									const other = question.answers.other as IOther;
 									if (other !== undefined && other.visible) {
 										const response: IDataObject = {};
-										const questionName = (question.answers.other as IOther).text as string;
-										//console.log(questionName);
-										//console.log(answers.get(question.id)?.filter((e) => e.other_id));
+										//const questionName = (question.answers.other as IOther).text as string;
 										const text = answers.get(question.id)?.filter((e) => e.other_id)[0].text;
 										response.value = value;
-										response[questionName] = text;
+										response.comment = text;
 										responseQuestions.set(heading, response);
 									}
 								}
