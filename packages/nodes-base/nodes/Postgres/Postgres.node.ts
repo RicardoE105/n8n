@@ -172,6 +172,21 @@ export class Postgres implements INodeType {
 			//         update
 			// ----------------------------------
 			{
+				displayName: 'Schema',
+				name: 'schema',
+				type: 'string',
+				displayOptions: {
+					show: {
+						operation: [
+							'update'
+						],
+					},
+				},
+				default: 'public',
+				required: true,
+				description: 'Name of the schema the table belongs to',
+			},
+			{
 				displayName: 'Table',
 				name: 'table',
 				type: 'string',
@@ -216,7 +231,30 @@ export class Postgres implements INodeType {
 				placeholder: 'name,description',
 				description: 'Comma separated list of the properties which should used as columns for rows to update.',
 			},
-
+			{
+				displayName: 'Additional Fields',
+				name: 'additionalFields',
+				type: 'collection',
+				placeholder: 'Add Field',
+				displayOptions: {
+					show: {
+						operation: [
+							'update',
+						],
+					},
+				},
+				default: {},
+				options: [
+					{
+						displayName: 'Update Key Cast',
+						name: 'updateKeyCast',
+						type: 'string',
+						placeholder: 'uuid',
+						default: '',
+						description: 'Server-side type casting, without :: in front. Example int for ::int',
+					},
+				],
+			},
 		]
 	};
 
@@ -305,6 +343,8 @@ export class Postgres implements INodeType {
 			const table = this.getNodeParameter('table', 0) as string;
 			const updateKey = this.getNodeParameter('updateKey', 0) as string;
 			const columnString = this.getNodeParameter('columns', 0) as string;
+			const schema = this.getNodeParameter('schema', 0) as string;
+			const additionalFields = this.getNodeParameter('additionalFields', 0) as IDataObject;
 
 			const columns = columnString.split(',').map(column => column.trim());
 
@@ -313,12 +353,25 @@ export class Postgres implements INodeType {
 				columns.unshift(updateKey);
 			}
 
+			// table schema
+			const te = new pgp.helpers.TableName({ table, schema });
+
 			// Prepare the data to update and copy it to be returned
 			const updateItems = getItemCopy(items, columns);
 
-			// Generate the multi-row update query
-			const query = pgp.helpers.update(updateItems, columns, table) + ' WHERE v.' + updateKey + ' = t.' + updateKey;
+			const columnSets: IDataObject[] = [];
+			for (const column of columns) {
+				if (additionalFields.updateKeyCast && column === updateKey) {
+					columnSets.push({ name: column, cast: additionalFields.updateKeyCast });
+				} else {
+					columnSets.push({ name: column });
+				}
+			}
 
+			const cs = new pgp.helpers.ColumnSet(columnSets);
+
+			// Generate the multi-row update query
+			const query = pgp.helpers.update(updateItems, cs, te) + ' WHERE v.' + updateKey + ' = t.' + updateKey;
 			// Executing the query to update the data
 			await db.none(query);
 
