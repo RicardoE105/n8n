@@ -31,14 +31,18 @@ import {
 	WebhookHttpMethod,
 	Workflow,
 	WorkflowExecuteMode,
+	IDataObject,
 } from 'n8n-workflow';
 
 import * as express from 'express';
 
+import {
+	IWebhookDb,
+ } from './Interfaces';
 
 export class ActiveWorkflowRunner {
 	private activeWorkflows: ActiveWorkflows | null = null;
-	private activeWebhooks: ActiveWebhooks | null = null;
+	//private activeWebhooks: ActiveWebhooks | null = null;
 	private activationErrors: {
 		[key: string]: IActivationError;
 	} = {};
@@ -48,7 +52,7 @@ export class ActiveWorkflowRunner {
 		// Get the active workflows from database
 		const workflowsData: IWorkflowDb[] = await Db.collections.Workflow!.find({ active: true }) as IWorkflowDb[];
 
-		this.activeWebhooks = new ActiveWebhooks();
+		//this.activeWebhooks = new ActiveWebhooks();
 
 		// Add them as active workflows
 		this.activeWorkflows = new ActiveWorkflows();
@@ -105,12 +109,16 @@ export class ActiveWorkflowRunner {
 	 * @returns {Promise<object>}
 	 * @memberof ActiveWorkflowRunner
 	 */
-	async executeWebhook(httpMethod: WebhookHttpMethod, path: string, req: express.Request, res: express.Response): Promise<IResponseCallbackData> {
+	async executeWebhook(httpMethod: WebhookHttpMethod, path: string, webhookId: string, req: express.Request, res: express.Response): Promise<IResponseCallbackData> {
 		if (this.activeWorkflows === null) {
 			throw new ResponseHelper.ResponseError('The "activeWorkflows" instance did not get initialized yet.', 404, 404);
 		}
 
-		const webhookData: IWebhookData | undefined = this.activeWebhooks!.get(httpMethod, path);
+		let webhookData: IWebhookData | undefined = undefined;
+
+		const webhook = await Db.collections.Webhook?.findOne({ webhookId: path, method: httpMethod });
+
+		webhookData = webhook?.webhookData;
 
 		if (webhookData === undefined) {
 			// The requested webhook is not registered
@@ -134,6 +142,7 @@ export class ActiveWorkflowRunner {
 
 		return new Promise((resolve, reject) => {
 			const executionMode = 'webhook';
+			//@ts-ignore
 			WebhookHelpers.executeWebhook(workflow, webhookData, workflowData, workflowStartNode, executionMode, undefined, req, res, (error: Error | null, data: object) => {
 				if (error !== null) {
 					return reject(error);
@@ -204,7 +213,15 @@ export class ActiveWorkflowRunner {
 		const webhooks = WebhookHelpers.getWorkflowWebhooks(workflow, additionalData);
 
 		for (const webhookData of webhooks) {
-			await this.activeWebhooks!.add(workflow, webhookData, mode);
+			const webhook = {
+				worKflowId: parseInt(workflow.id as string, 10),
+				webhookId: webhookData.path,
+				webhookData,
+				method: webhookData.httpMethod,
+			} as IWebhookDb;
+
+			await Db.collections.Webhook?.save(webhook);
+			//await this.activeWebhooks!.add(workflow, webhookData, mode);
 			// Save static data!
 			await WorkflowHelpers.saveStaticData(workflow);
 		}
@@ -227,7 +244,7 @@ export class ActiveWorkflowRunner {
 		const nodeTypes = NodeTypes();
 		const workflow = new Workflow({ id: workflowId, name: workflowData.name, nodes: workflowData.nodes, connections: workflowData.connections, active: workflowData.active, nodeTypes, staticData: workflowData.staticData, settings: workflowData.settings });
 
-		await this.activeWebhooks!.removeWorkflow(workflow);
+		//await this.activeWebhooks!.removeWorkflow(workflow);
 
 		// Save the static workflow data if needed
 		await WorkflowHelpers.saveStaticData(workflow);
@@ -360,6 +377,7 @@ export class ActiveWorkflowRunner {
 
 			// Add the workflows which have webhooks defined
 			await this.addWorkflowWebhooks(workflowInstance, additionalData, mode);
+
 			await this.activeWorkflows.add(workflowId, workflowInstance, additionalData, getTriggerFunctions, getPollFunctions);
 
 			if (this.activationErrors[workflowId] !== undefined) {
@@ -394,6 +412,7 @@ export class ActiveWorkflowRunner {
 	 * @memberof ActiveWorkflowRunner
 	 */
 	async remove(workflowId: string): Promise<void> {
+
 		if (this.activeWorkflows !== null) {
 			// Remove all the webhooks of the workflow
 			await this.removeWorkflowWebhooks(workflowId);
@@ -402,6 +421,12 @@ export class ActiveWorkflowRunner {
 				// If there were any activation errors delete them
 				delete this.activationErrors[workflowId];
 			}
+
+			const webhook = {
+				worKflowId: parseInt(workflowId as string, 10),
+			} as IWebhookDb;
+
+			await Db.collections.Webhook?.delete(webhook);
 
 			// Remove the workflow from the "list" of active workflows
 			return this.activeWorkflows.remove(workflowId);

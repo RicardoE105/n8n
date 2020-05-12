@@ -23,8 +23,6 @@ import {
 
 import { get } from 'lodash';
 
-
-
 /**
  * Gets special parameters which should be added to nodeTypes depending
  * on their type or configuration
@@ -752,7 +750,7 @@ export function getNodeWebhooks(workflow: Workflow, node: INode, additionalData:
 			nodeWebhookPath = nodeWebhookPath.slice(1);
 		}
 
-		const path = getNodeWebhookPath(workflowId, node, nodeWebhookPath);
+		const path = getNodeWebhookPath(node, workflow.id as string, nodeWebhookPath);
 
 		const httpMethod = workflow.getSimpleParameterValue(node, webhookDescription['httpMethod'], 'GET');
 
@@ -785,8 +783,14 @@ export function getNodeWebhooks(workflow: Workflow, node: INode, additionalData:
  * @param {string} path
  * @returns {string}
  */
-export function getNodeWebhookPath(workflowId: string, node: INode, path: string): string {
-	return `${workflowId}/${encodeURIComponent(node.name.toLowerCase())}/${path}`;
+export function getNodeWebhookPath(node: INode, workflowId: string, path: string): string {
+	let webhookPath: string;
+	if (node.isOld) {
+		webhookPath = `${workflowId}/${encodeURIComponent(node.name.toLowerCase())}/${path}`;
+	} else {
+		webhookPath = `${node.id}/${path}`;
+	}
+	return webhookPath;
 }
 
 
@@ -800,9 +804,9 @@ export function getNodeWebhookPath(workflowId: string, node: INode, path: string
  * @param {string} path
  * @returns {string}
  */
-export function getNodeWebhookUrl(baseUrl: string, workflowId: string, node: INode, path: string): string {
+export function getNodeWebhookUrl(baseUrl: string, worflowId: string, node: INode, path: string): string {
 	// return `${baseUrl}/${workflowId}/${nodeTypeName}/${path}`;
-	return `${baseUrl}/${getNodeWebhookPath(workflowId, node, path)}`;
+	return `${baseUrl}/${getNodeWebhookPath(node, worflowId, path)}`;
 }
 
 

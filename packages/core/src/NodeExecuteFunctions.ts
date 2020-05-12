@@ -289,7 +289,7 @@ export function getNodeWebhookUrl(name: string, workflow: Workflow, node: INode,
 		return undefined;
 	}
 
-	return NodeHelpers.getNodeWebhookUrl(baseUrl, workflow.id!, node, path.toString());
+	return NodeHelpers.getNodeWebhookUrl(baseUrl, workflow.id as string, node, path.toString());
 }
 
 

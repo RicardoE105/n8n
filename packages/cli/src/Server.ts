@@ -1152,9 +1152,11 @@ class App {
 			// Cut away the "/webhook/" to get the registred part of the url
 			const requestUrl = (req as ICustomRequest).parsedUrl!.pathname!.slice(this.endpointWebhook.length + 2);
 
+			const webhookId = requestUrl.split('/')[0];
+
 			let response;
 			try {
-				response = await this.activeWorkflowRunner.executeWebhook('HEAD', requestUrl, req, res);
+				response = await this.activeWorkflowRunner.executeWebhook('HEAD', requestUrl, webhookId, req, res);
 			} catch (error) {
 				ResponseHelper.sendErrorResponse(res, error);
 				return;
@@ -1173,9 +1175,11 @@ class App {
 			// Cut away the "/webhook/" to get the registred part of the url
 			const requestUrl = (req as ICustomRequest).parsedUrl!.pathname!.slice(this.endpointWebhook.length + 2);
 
+			let webhookId = requestUrl.split('/')[0];
+
 			let response;
 			try {
-				response = await this.activeWorkflowRunner.executeWebhook('GET', requestUrl, req, res);
+				response = await this.activeWorkflowRunner.executeWebhook('GET', requestUrl, webhookId, req, res);
 			} catch (error) {
 				ResponseHelper.sendErrorResponse(res, error);
 				return ;
@@ -1194,9 +1198,11 @@ class App {
 			// Cut away the "/webhook/" to get the registred part of the url
 			const requestUrl = (req as ICustomRequest).parsedUrl!.pathname!.slice(this.endpointWebhook.length + 2);
 
+			const webhookId = requestUrl.split('/')[0];
+
 			let response;
 			try {
-				response = await this.activeWorkflowRunner.executeWebhook('POST', requestUrl, req, res);
+				response = await this.activeWorkflowRunner.executeWebhook('POST', requestUrl, webhookId, req, res);
 			} catch (error) {
 				ResponseHelper.sendErrorResponse(res, error);
 				return;

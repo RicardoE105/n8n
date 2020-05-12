@@ -9,7 +9,6 @@ import {
 	NodeExecuteFunctions,
 } from './';
 
-
 export class ActiveWebhooks {
 	private workflowWebhooks: {
 		[key: string]: IWebhookData[];
@@ -42,7 +41,6 @@ export class ActiveWebhooks {
 		// Make the webhook available directly because sometimes to create it successfully
 		// it gets called
 		this.webhookUrls[this.getWebhookKey(webhookData.httpMethod, webhookData.path)] = webhookData;
-
 		const webhookExists = await workflow.runWebhookMethod('checkExists', webhookData, NodeExecuteFunctions, mode, this.testWebhooks);
 		if (webhookExists === false) {
 			// If webhook does not exist yet create it

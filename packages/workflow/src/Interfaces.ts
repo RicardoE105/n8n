@@ -284,6 +284,7 @@ export interface INodeCredentials {
 }
 
 export interface INode {
+	id?: string;
 	name: string;
 	typeVersion: number;
 	type: string;
@@ -296,6 +297,7 @@ export interface INode {
 	continueOnFail?: boolean;
 	parameters: INodeParameters;
 	credentials?: INodeCredentials;
+	isOld?: boolean;
 }
 
 

@@ -10,6 +10,7 @@ import {
 	IWorkflowBase as IWorkflowBaseWorkflow,
 	IWorkflowCredentials,
 	WorkflowExecuteMode,
+	IWebhookData,
 } from 'n8n-workflow';
 
 import {
@@ -40,8 +41,15 @@ export interface IDatabaseCollections {
 	Credentials: Repository<ICredentialsDb> | null;
 	Execution: Repository<IExecutionFlattedDb> | null;
 	Workflow: Repository<IWorkflowDb> | null;
+	Webhook: Repository<IWebhookDb> | null;
 }
 
+export interface IWebhookDb {
+	worKflowId: number;
+	webhookId: string;
+	method: string;
+	webhookData: IWebhookData;
+}
 
 export interface IWorkflowBase extends IWorkflowBaseWorkflow {
 	id?: number | string | ObjectID;

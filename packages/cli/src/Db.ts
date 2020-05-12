@@ -25,6 +25,7 @@ export let collections: IDatabaseCollections = {
 	Credentials: null,
 	Execution: null,
 	Workflow: null,
+	Webhook: null,
 };
 
 import {
@@ -121,6 +122,7 @@ export async function init(): Promise<IDatabaseCollections> {
 	collections.Credentials = getRepository(entities.CredentialsEntity);
 	collections.Execution = getRepository(entities.ExecutionEntity);
 	collections.Workflow = getRepository(entities.WorkflowEntity);
+	collections.Webhook = getRepository(entities.WebhookEntity);
 
 	return collections;
 }

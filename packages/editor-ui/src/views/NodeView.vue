@@ -122,6 +122,8 @@ import RunData from '@/components/RunData.vue';
 
 import mixins from 'vue-typed-mixins';
 
+import { v4 as uuidv4 } from 'uuid';
+
 import { debounce } from 'lodash';
 import axios from 'axios';
 import {
@@ -324,6 +326,16 @@ export default mixins(
 				this.$store.commit('setWorkflowId', workflowId);
 				this.$store.commit('setWorkflowName', data.name);
 				this.$store.commit('setWorkflowSettings', data.settings || {});
+
+				let nodeType: INodeTypeDescription | null;
+
+				data.nodes = data.nodes.map((node: INodeUi) => {
+					nodeType = this.$store.getters.nodeType(node.type);
+					if (nodeType!.group.includes('trigger') && node.id === undefined) {
+						node.isOld = true;
+					}
+					return node;
+				 });
 
 				await this.addNodes(data.nodes, data.connections);
 			},
@@ -1539,7 +1551,12 @@ export default mixins(
 				let nodeType: INodeTypeDescription | null;
 				let foundNodeIssues: INodeIssues | null;
 				nodes.forEach((node) => {
+
 					nodeType = this.$store.getters.nodeType(node.type);
+
+					if (nodeType!.group.includes('trigger') && node.id === undefined && !node.isOld) {
+						node.id = uuidv4();
+					}
 
 					// Make sure that some properties always exist
 					if (!node.hasOwnProperty('disabled')) {
@@ -1662,7 +1679,6 @@ export default mixins(
 
 					newNodeNames.push(newName);
 					nodeNameTable[oldName] = newName;
-
 					createNodes.push(node);
 				});
 

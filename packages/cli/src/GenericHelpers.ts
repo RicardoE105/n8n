@@ -131,3 +131,8 @@ export async function getConfigValue(configKey: string): Promise<string | boolea
 
 	return data;
 }
+
+export function isValidV4UUID (uuid: string): boolean {
+	const uuidV4Regex = /^[A-F\d]{8}-[A-F\d]{4}-4[A-F\d]{3}-[89AB][A-F\d]{3}-[A-F\d]{12}$/i;
+	return uuidV4Regex.test(uuid);
+}

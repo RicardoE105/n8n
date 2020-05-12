@@ -55,6 +55,7 @@ export class TestWebhooks {
 	 * @memberof TestWebhooks
 	 */
 	async callTestWebhook(httpMethod: WebhookHttpMethod, path: string, request: express.Request, response: express.Response): Promise<IResponseCallbackData> {
+
 		const webhookData: IWebhookData | undefined = this.activeWebhooks!.get(httpMethod, path);
 
 		if (webhookData === undefined) {
@@ -123,7 +124,6 @@ export class TestWebhooks {
 	 */
 	async needsWebhookData(workflowData: IWorkflowDb, workflow: Workflow, additionalData: IWorkflowExecuteAdditionalData, mode: WorkflowExecuteMode, sessionId?: string, destinationNode?: string): Promise<boolean> {
 		const webhooks = WebhookHelpers.getWorkflowWebhooks(workflow, additionalData, destinationNode);
-
 		if (webhooks.length === 0) {
 			// No Webhooks found
 			return false;
@@ -146,6 +146,7 @@ export class TestWebhooks {
 				timeout,
 				workflowData,
 			};
+
 			await this.activeWebhooks!.add(workflow, webhookData, mode);
 
 			// Save static data!

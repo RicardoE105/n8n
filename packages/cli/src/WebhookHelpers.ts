@@ -21,6 +21,10 @@ import {
 } from 'n8n-core';
 
 import {
+	Db,
+} from './';
+
+import {
 	IBinaryKeyData,
 	IDataObject,
 	IExecuteData,
