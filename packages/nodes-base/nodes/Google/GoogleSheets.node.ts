@@ -38,9 +38,43 @@ export class GoogleSheets implements INodeType {
 			{
 				name: 'googleApi',
 				required: true,
-			}
+				displayOptions: {
+					show: {
+						authentication: [
+							'credentials',
+						],
+					},
+				},
+			},
+			{
+				name: 'googleSheetsOAuth2Api',
+				required: true,
+				displayOptions: {
+					show: {
+						authentication: [
+							'oauth2',
+						],
+					},
+				},
+			},
 		],
 		properties: [
+			{
+				displayName: 'Authentication',
+				name: 'authentication',
+				type: 'options',
+				options: [
+					{
+						name: 'Credentials',
+						value: 'credentials',
+					},
+					{
+						name: 'OAuth2',
+						value: 'oauth2',
+					},
+				],
+				default: 'credentials',
+			},
 			{
 				displayName: 'Operation',
 				name: 'operation',
