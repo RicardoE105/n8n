@@ -15,6 +15,7 @@ import {
 	ITriggerResponse,
 	IWebhookFunctions as IWebhookFunctionsBase,
 	IWorkflowSettings as IWorkflowSettingsWorkflow,
+	ICredentialDataDecryptedObject,
  } from 'n8n-workflow';
 
 
@@ -38,6 +39,7 @@ export interface IExecuteFunctions extends IExecuteFunctionsBase {
 		request: requestPromise.RequestPromiseAPI,
 		requestOAuth(this: IAllExecuteFunctions, credentialsType: string, requestOptions: OptionsWithUri | requestPromise.RequestPromiseOptions): Promise<any>, // tslint:disable-line:no-any
 		returnJsonArray(jsonData: IDataObject | IDataObject[]): INodeExecutionData[];
+		updateCredential(credentialsType: string, credentials: ICredentialDataDecryptedObject): void;
 	};
 }
 

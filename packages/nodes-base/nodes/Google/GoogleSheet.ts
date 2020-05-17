@@ -1,7 +1,7 @@
 import { IDataObject } from 'n8n-workflow';
 import { google, sheets_v4 } from 'googleapis';
-import { JWT } from 'google-auth-library';
-import { getAuthenticationClient } from './GoogleApi';
+import { Credentials } from 'google-auth-library';
+import { getAuthenticationClient, getOAuth2Client } from './GoogleApi';
 
 import {
 	utils as xlsxUtils,
@@ -16,6 +16,20 @@ export interface ISheetOptions {
 export interface IGoogleAuthCredentials {
 	email: string;
 	privateKey: string;
+	scopes: string[];
+}
+
+export interface IGoogleAuth2Credentials {
+	clientId: string;
+	clientSecret: string;
+	oauthTokenData: {
+		access_token: string;
+		expires_in: number;
+		refresh_token: string;
+		scope: string;
+		token_type: string;
+	};
+	refreshToken: (tokens: Credentials) => void;
 }
 
 export interface ISheetUpdateData {
@@ -46,15 +60,17 @@ export type ValueRenderOption = 'FORMATTED_VALUE' | 'FORMULA' | 'UNFORMATTED_VAL
 
 export class GoogleSheet {
 	id: string;
-	credentials: IGoogleAuthCredentials;
+	credentials: IGoogleAuthCredentials | IGoogleAuth2Credentials;
 	scopes: string[];
+	type: string;
 
-	constructor(spreadsheetId: string, credentials: IGoogleAuthCredentials, options?: ISheetOptions | undefined) {
+	constructor(spreadsheetId: string, credentials: IGoogleAuthCredentials | IGoogleAuth2Credentials, type: string, options?: ISheetOptions | undefined) {
 		// options = <SheetOptions>options || {};
 		if (!options) {
 			options = {} as ISheetOptions;
 		}
 
+		this.type = type;
 		this.id = spreadsheetId;
 		this.credentials = credentials;
 		this.scopes = options.scope || ['https://www.googleapis.com/auth/spreadsheets'];
@@ -89,7 +105,6 @@ export class GoogleSheet {
 	async getData(range: string, valueRenderMode: ValueRenderOption): Promise<string[][] | undefined> {
 		const client = await this.getAuthenticationClient();
 
-		// @ts-ignore
 		const response = await Sheets.spreadsheets.values.get(
 			{
 				auth: client,
@@ -98,6 +113,7 @@ export class GoogleSheet {
 				valueRenderOption: valueRenderMode,
 			}
 		);
+
 
 		return response.data.values as string[][] | undefined;
 	}
@@ -215,8 +231,12 @@ export class GoogleSheet {
     /**
      * Returns the authentication client needed to access spreadsheet
      */
-	async getAuthenticationClient(): Promise<JWT> {
-		return getAuthenticationClient(this.credentials.email, this.credentials.privateKey, this.scopes);
+	async getAuthenticationClient(): Promise<any> {
+		if (this.type === 'oauth2') {
+			return getOAuth2Client(this.credentials as IGoogleAuth2Credentials);
+		} else {
+			return getAuthenticationClient(this.credentials as IGoogleAuthCredentials);
+		}
 	}
 
 

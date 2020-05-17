@@ -13,6 +13,7 @@ import {
 } from 'n8n-workflow';
 
 import { getAuthenticationClient } from './GoogleApi';
+import { IGoogleAuthCredentials } from './GoogleSheet';
 
 
 export class GoogleDrive implements INodeType {
@@ -825,7 +826,13 @@ export class GoogleDrive implements INodeType {
 			'https://www.googleapis.com/auth/drive.photos.readonly',
 		];
 
-		const client = await getAuthenticationClient(credentials.email as string, credentials.privateKey as string, scopes);
+		const googleCredentils = {
+			email: credentials.email,
+			privateKey: credentials.private,
+			scopes,
+		} as IGoogleAuthCredentials;
+
+		const client = await getAuthenticationClient(googleCredentils);
 
 		const drive = google.drive({
 			version: 'v3',

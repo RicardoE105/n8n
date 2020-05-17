@@ -170,7 +170,12 @@ export function requestOAuth(this: IAllExecuteFunctions, credentialsType: string
 		});
 }
 
+export function updateCredential(this: IAllExecuteFunctions, credentialsType: string, node: INode, additionalData: IWorkflowExecuteAdditionalData, credentials: ICredentialDataDecryptedObject) {
 
+	const name = node.credentials![credentialsType];
+
+	return additionalData.credentialsHelper.updateCredentials(name, credentialsType, credentials);
+}
 
 /**
  * Takes generic input data and brings it into the json format n8n uses.
@@ -619,6 +624,9 @@ export function getExecuteFunctions(workflow: Workflow, runExecutionData: IRunEx
 					return requestOAuth.call(this, credentialsType, requestOptions, node, additionalData, tokenType, property);
 				},
 				returnJsonArray,
+				updateCredential(this: IAllExecuteFunctions, credentialsType: string, credential: ICredentialDataDecryptedObject): Promise<any> { // tslint:disable-line:no-any
+					return updateCredential.call(this, credentialsType, node, additionalData, credential);
+				},
 			},
 		};
 	})(workflow, runExecutionData, connectionInputData, inputData, node);

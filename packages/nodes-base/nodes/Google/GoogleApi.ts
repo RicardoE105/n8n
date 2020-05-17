@@ -1,18 +1,18 @@
 
-import { JWT,  } from 'google-auth-library';
+import { JWT,  OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
-import { IDataObject } from 'n8n-workflow';
-
+import { IGoogleAuth2Credentials, IGoogleAuthCredentials } from './GoogleSheet';
 
 /**
  * Returns the authentication client needed to access spreadsheet
  */
-export async function getAuthenticationClient(email: string, privateKey: string, scopes: string[]): Promise <JWT> {
+
+export async function getAuthenticationClient(credentials: IGoogleAuthCredentials): Promise <JWT> {
 	const client = new google.auth.JWT(
-		email,
+		credentials.email,
 		undefined,
-		privateKey,
-		scopes,
+		credentials.privateKey,
+		credentials.scopes,
 		undefined
 	);
 
@@ -23,29 +23,15 @@ export async function getAuthenticationClient(email: string, privateKey: string,
 	return client;
 }
 
-export async function getOAuth2Client(credentials: IDataObject): Promise <any> {
+export function getOAuth2Client(credentials: IGoogleAuth2Credentials): OAuth2Client {
 	const client = new google.auth.OAuth2(
-		undefined,
-		undefined,
+		credentials.clientId,
+		credentials.clientSecret,
 	);
 
-	// //export interface Credentials {
-	// 	refresh_token?: string | null;
-	// 	expiry_date?: number | null;
-	// 	access_token?: string | null;
-	// 	token_type?: string | null;
-	// 	id_token?: string | null;
-	// }
+	client.setCredentials(credentials.oauthTokenData);
 
-	// client.setCredentials()
-
-	client.on('tokens', (tokens) => {
-		if (tokens.refresh_token) {
-			// find additonal data
-		  // store the refresh_token in my database!
-		  console.log(tokens.refresh_token);
-		}
-	  });
+	client.on('tokens', credentials.refreshToken);
 
 	return client;
 }

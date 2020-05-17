@@ -1,6 +1,11 @@
 import { sheets_v4 } from 'googleapis';
 
-import { IExecuteFunctions } from 'n8n-core';
+import { Credentials } from 'google-auth-library';
+
+import {
+	IExecuteFunctions,
+} from 'n8n-core';
+
 import {
 	IDataObject,
 	ILoadOptionsFunctions,
@@ -8,17 +13,49 @@ import {
 	INodePropertyOptions,
 	INodeType,
 	INodeTypeDescription,
+	ICredentialDataDecryptedObject,
 } from 'n8n-workflow';
 
 import {
 	GoogleSheet,
 	IGoogleAuthCredentials,
+	IGoogleAuth2Credentials,
 	ILookupValues,
 	ISheetUpdateData,
 	IToDelete,
 	ValueInputOption,
 	ValueRenderOption,
 } from './GoogleSheet';
+
+function getGoogleCredentials(this: IExecuteFunctions): IGoogleAuth2Credentials | IGoogleAuthCredentials {
+	let googleCredentials: IGoogleAuthCredentials | IGoogleAuth2Credentials;
+
+	const authenticationType = this.getNodeParameter('authentication', 0) as string;
+
+	if (authenticationType === 'oauth2') {
+
+		googleCredentials = this.getCredentials('googleSheetsOAuth2Api') as unknown as IGoogleAuth2Credentials;
+
+		//Define the function that will refresh the token when it's expired by the Google SDK
+		googleCredentials.refreshToken = async (tokens: Credentials) => {
+			const newCedentials = this.getCredentials('googleSheetsOAuth2Api') as ICredentialDataDecryptedObject;
+			newCedentials.oauthTokenData = tokens as IDataObject;
+			await this.helpers.updateCredential('googleSheetsOAuth2Api', newCedentials);
+		};
+
+	} else {
+
+		const credentials = this.getCredentials('googleApi') as IDataObject;
+
+		googleCredentials = {
+			email: credentials.email,
+			privateKey: credentials.privateKey,
+			scopes:	['https://www.googleapis.com/auth/spreadsheets'],
+		} as IGoogleAuthCredentials;
+	}
+	return googleCredentials;
+}
+
 
 export class GoogleSheets implements INodeType {
 	description: INodeTypeDescription = {
@@ -30,7 +67,7 @@ export class GoogleSheets implements INodeType {
 		description: 'Read, update and write data to Google Sheets',
 		defaults: {
 			name: 'Google Sheets',
-			color: '#995533',
+			color: '#087d48',
 		},
 		inputs: ['main'],
 		outputs: ['main'],
@@ -575,18 +612,10 @@ export class GoogleSheets implements INodeType {
 			async getSheets(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				const spreadsheetId = this.getCurrentNodeParameter('sheetId') as string;
 
-				const credentials = this.getCredentials('googleApi');
+				const authenticationType = this.getNodeParameter('authentication', 0) as string;
 
-				if (credentials === undefined) {
-					throw new Error('No credentials got returned!');
-				}
-
-				const googleCredentials = {
-					email: credentials.email,
-					privateKey: credentials.privateKey,
-				} as IGoogleAuthCredentials;
-
-				const sheet = new GoogleSheet(spreadsheetId, googleCredentials);
+				//@ts-ignore
+				const sheet = new GoogleSheet(spreadsheetId, getGoogleCredentials.call(this), authenticationType);
 				const responseData = await sheet.spreadsheetGetSheets();
 
 				if (responseData === undefined) {
@@ -610,21 +639,12 @@ export class GoogleSheets implements INodeType {
 		},
 	};
 
-
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		const spreadsheetId = this.getNodeParameter('sheetId', 0) as string;
-		const credentials = this.getCredentials('googleApi');
 
-		if (credentials === undefined) {
-			throw new Error('No credentials got returned!');
-		}
+		const authenticationType = this.getNodeParameter('authentication', 0) as string;
 
-		const googleCredentials = {
-			email: credentials.email,
-			privateKey: credentials.privateKey,
-		} as IGoogleAuthCredentials;
-
-		const sheet = new GoogleSheet(spreadsheetId, googleCredentials);
+		const sheet = new GoogleSheet(spreadsheetId, getGoogleCredentials.call(this), authenticationType);
 
 		const operation = this.getNodeParameter('operation', 0) as string;
 
