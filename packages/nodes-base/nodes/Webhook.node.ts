@@ -87,6 +87,8 @@ export class Webhook implements INodeType {
 				responsePropertyName: '={{$parameter["options"]["responsePropertyName"]}}',
 				responseHeaders: '={{$parameter["options"]["responseHeaders"]}}',
 				path: '={{$parameter["path"]}}',
+				//subtitle: '={{$parameter["mode"]==="binaryToJson" ? "Binary to JSON" : "JSON to Binary"}}',
+
 			},
 		],
 		properties: [

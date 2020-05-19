@@ -11,6 +11,7 @@ import {
 	IWorkflowCredentials,
 	WorkflowExecuteMode,
 	IWebhookData,
+	INode,
 } from 'n8n-workflow';
 
 import {
@@ -45,10 +46,10 @@ export interface IDatabaseCollections {
 }
 
 export interface IWebhookDb {
-	worKflowId: number;
-	webhookId: string;
+	workflowId: number;
+	webhookPath: string;
 	method: string;
-	webhookData: IWebhookData;
+	node: INode;
 }
 
 export interface IWorkflowBase extends IWorkflowBaseWorkflow {

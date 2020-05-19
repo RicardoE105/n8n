@@ -55,6 +55,8 @@ import { workflowHelpers } from '@/components/mixins/workflowHelpers';
 
 import mixins from 'vue-typed-mixins';
 
+import { v4 as uuidv4 } from 'uuid';
+
 export default mixins(
 	copyPaste,
 	showMessage,
@@ -93,10 +95,16 @@ export default mixins(
 				});
 			},
 			getValue (webhookData: IWebhookDescription, key: string): string {
+				console.log('entre');
 				if (webhookData[key] === undefined) {
 					return 'empty';
 				}
+				console.log('webhook key'+ key);
+				console.log('webhook webhookdata'+ webhookData);
+				console.log('webhook webhookdata[key]'+ webhookData[key]);
+
 				try {
+					console.log(this.resolveExpression(webhookData[key] as string) as string);
 					return this.resolveExpression(webhookData[key] as string) as string;
 				} catch (e) {
 					return '[INVALID EXPRESSION]';

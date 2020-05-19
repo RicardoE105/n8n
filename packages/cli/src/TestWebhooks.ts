@@ -138,8 +138,10 @@ export class TestWebhooks {
 			this.cancelTestWebhook(workflowData.id.toString());
 		}, 120000);
 
+
 		let key: string;
 		for (const webhookData of webhooks) {
+
 			key = this.activeWebhooks!.getWebhookKey(webhookData.httpMethod, webhookData.path);
 			this.testWebhookData[key] = {
 				sessionId,

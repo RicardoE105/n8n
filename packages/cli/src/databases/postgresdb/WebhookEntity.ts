@@ -11,20 +11,20 @@ import {
 	Entity,
 } from 'typeorm';
 
-import { IWebhookDb } from '../..';
+import { IWebhookDb } from '../../Interfaces';
 
 @Entity()
-export class WebhookEntity implements IWebhookDb{
+export class WebhookEntity implements IWebhookDb {
 
 	@Column({ primary: true })
-	worKflowId: number;
+	workflowId: number;
 
 	@Column({ primary: true })
-	webhookId: string;
+	webhookPath: string;
 
 	@Column({ primary: true })
 	method: string;
 
 	@Column('json')
-	webhookData: IWebhookData;
+	node: INode;
 }

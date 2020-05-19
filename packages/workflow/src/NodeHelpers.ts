@@ -721,6 +721,7 @@ export async function prepareOutputData(outputData: INodeExecutionData[], output
  * @returns {IWebhookData[]}
  */
 export function getNodeWebhooks(workflow: Workflow, node: INode, additionalData: IWorkflowExecuteAdditionalData): IWebhookData[] {
+
 	if (node.disabled === true) {
 		// Node is disabled so webhooks will also not be enabled
 		return [];
@@ -785,10 +786,14 @@ export function getNodeWebhooks(workflow: Workflow, node: INode, additionalData:
  */
 export function getNodeWebhookPath(node: INode, workflowId: string, path: string): string {
 	let webhookPath: string;
-	if (node.isOld) {
+	if (node.webhookPath === undefined) {
 		webhookPath = `${workflowId}/${encodeURIComponent(node.name.toLowerCase())}/${path}`;
 	} else {
-		webhookPath = `${node.id}/${path}`;
+		if (node.type.includes('webhook')) {
+			webhookPath = path;
+		} else {
+			webhookPath = node.webhookPath;
+		}
 	}
 	return webhookPath;
 }
@@ -805,7 +810,6 @@ export function getNodeWebhookPath(node: INode, workflowId: string, path: string
  * @returns {string}
  */
 export function getNodeWebhookUrl(baseUrl: string, worflowId: string, node: INode, path: string): string {
-	// return `${baseUrl}/${workflowId}/${nodeTypeName}/${path}`;
 	return `${baseUrl}/${getNodeWebhookPath(node, worflowId, path)}`;
 }
 

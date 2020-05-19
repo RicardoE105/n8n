@@ -327,16 +327,6 @@ export default mixins(
 				this.$store.commit('setWorkflowName', data.name);
 				this.$store.commit('setWorkflowSettings', data.settings || {});
 
-				let nodeType: INodeTypeDescription | null;
-
-				data.nodes = data.nodes.map((node: INodeUi) => {
-					nodeType = this.$store.getters.nodeType(node.type);
-					if (nodeType!.group.includes('trigger') && node.id === undefined) {
-						node.isOld = true;
-					}
-					return node;
-				 });
-
 				await this.addNodes(data.nodes, data.connections);
 			},
 			mouseDown (e: MouseEvent) {
@@ -911,7 +901,6 @@ export default mixins(
 				if (this.editAllowedCheck() === false) {
 					return;
 				}
-
 				const nodeTypeData: INodeTypeDescription | null = this.$store.getters.nodeType(nodeTypeName);
 
 				if (nodeTypeData === null) {
@@ -953,6 +942,10 @@ export default mixins(
 
 				// Check if node-name is unique else find one that is
 				newNodeData.name = this.getUniqueNodeName(newNodeData.name);
+
+				if (newNodeData.type.includes('Trigger') || newNodeData.type.includes('webhook')) {
+					newNodeData.webhookPath = uuidv4();
+				}
 
 				await this.addNodes([newNodeData]);
 
@@ -1283,7 +1276,6 @@ export default mixins(
 			},
 			async newWorkflow (): Promise<void> {
 				await this.resetWorkspace();
-
 				// Create start node
 				const defaultNodes = [
 					{
@@ -1554,9 +1546,9 @@ export default mixins(
 
 					nodeType = this.$store.getters.nodeType(node.type);
 
-					if (nodeType!.group.includes('trigger') && node.id === undefined && !node.isOld) {
-						node.id = uuidv4();
-					}
+					// if (nodeType!.group.includes('trigger')) {
+					// 	node.webhookPath = uuidv4();
+					// }
 
 					// Make sure that some properties always exist
 					if (!node.hasOwnProperty('disabled')) {
@@ -1584,6 +1576,11 @@ export default mixins(
 							console.error(e); // eslint-disable-line no-console
 						}
 						node.parameters = nodeParameters !== null ? nodeParameters : {};
+
+						// if it's a webhook set the UUID as the default path
+						if (node.type.includes('webhook') && node.webhookPath && node.parameters.path === '') {
+							node.parameters.path = node.webhookPath;
+						}
 					}
 
 					foundNodeIssues = this.getNodeIssues(nodeType, node);

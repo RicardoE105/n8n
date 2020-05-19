@@ -84,7 +84,7 @@ import * as jwks from 'jwks-rsa';
 // @ts-ignore
 import * as timezones from 'google-timezones-json';
 import * as parseUrl from 'parseurl';
-
+import { IWorkflowDb } from './Interfaces';
 
 class App {
 
@@ -427,6 +427,12 @@ class App {
 			const newWorkflowData = req.body;
 			const id = req.params.id;
 
+			//const workflowData = await Db.collections.Workflow?.findOne({ id: parseInt(id, 10) }) as IWorkflowDb;
+
+			//const nodeTypes = NodeTypes();
+
+			//const workflow = new Workflow({ id: workflowData.id.toString(), name: workflowData.name, nodes: workflowData.nodes, connections: workflowData.connections, active: workflowData.active, nodeTypes, staticData: workflowData.staticData, settings: workflowData.settings});
+
 			if (this.activeWorkflowRunner.isActive(id)) {
 				// When workflow gets saved always remove it as the triggers could have been
 				// changed and so the changes would not take effect
@@ -492,7 +498,9 @@ class App {
 		this.app.delete('/rest/workflows/:id', ResponseHelper.send(async (req: express.Request, res: express.Response): Promise<boolean> => {
 			const id = req.params.id;
 
-			if (this.activeWorkflowRunner.isActive(id)) {
+			const isActive = await this.activeWorkflowRunner.isActive(id);
+
+			if (isActive) {
 				// Before deleting a workflow deactivate it
 				await this.activeWorkflowRunner.remove(id);
 			}
@@ -632,7 +640,8 @@ class App {
 
 		// Returns the active workflow ids
 		this.app.get('/rest/active', ResponseHelper.send(async (req: express.Request, res: express.Response): Promise<string[]> => {
-			return this.activeWorkflowRunner.getActiveWorkflows();
+			const activeWorkflows = await this.activeWorkflowRunner.getActiveWorkflows();
+			return activeWorkflows.map(workflow => workflow.id.toString()) as string[];
 		}));
 
 
@@ -1152,11 +1161,9 @@ class App {
 			// Cut away the "/webhook/" to get the registred part of the url
 			const requestUrl = (req as ICustomRequest).parsedUrl!.pathname!.slice(this.endpointWebhook.length + 2);
 
-			const webhookId = requestUrl.split('/')[0];
-
 			let response;
 			try {
-				response = await this.activeWorkflowRunner.executeWebhook('HEAD', requestUrl, webhookId, req, res);
+				response = await this.activeWorkflowRunner.executeWebhook('HEAD', requestUrl, req, res);
 			} catch (error) {
 				ResponseHelper.sendErrorResponse(res, error);
 				return;
@@ -1175,11 +1182,9 @@ class App {
 			// Cut away the "/webhook/" to get the registred part of the url
 			const requestUrl = (req as ICustomRequest).parsedUrl!.pathname!.slice(this.endpointWebhook.length + 2);
 
-			let webhookId = requestUrl.split('/')[0];
-
 			let response;
 			try {
-				response = await this.activeWorkflowRunner.executeWebhook('GET', requestUrl, webhookId, req, res);
+				response = await this.activeWorkflowRunner.executeWebhook('GET', requestUrl, req, res);
 			} catch (error) {
 				ResponseHelper.sendErrorResponse(res, error);
 				return ;
@@ -1198,11 +1203,9 @@ class App {
 			// Cut away the "/webhook/" to get the registred part of the url
 			const requestUrl = (req as ICustomRequest).parsedUrl!.pathname!.slice(this.endpointWebhook.length + 2);
 
-			const webhookId = requestUrl.split('/')[0];
-
 			let response;
 			try {
-				response = await this.activeWorkflowRunner.executeWebhook('POST', requestUrl, webhookId, req, res);
+				response = await this.activeWorkflowRunner.executeWebhook('POST', requestUrl, req, res);
 			} catch (error) {
 				ResponseHelper.sendErrorResponse(res, error);
 				return;

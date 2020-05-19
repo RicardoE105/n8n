@@ -67,6 +67,7 @@ export function getWorkflowWebhooks(workflow: Workflow, additionalData: IWorkflo
 			// and no other ones
 			continue;
 		}
+
 		returnData.push.apply(returnData, NodeHelpers.getNodeWebhooks(workflow, node, additionalData));
 	}
 
