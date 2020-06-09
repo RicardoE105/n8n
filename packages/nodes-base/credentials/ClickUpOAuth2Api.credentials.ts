@@ -42,24 +42,12 @@ export class ClickUpOAuth2Api implements ICredentialType {
 			displayName: 'Auth URI Query Parameters',
 			name: 'authQueryParameters',
 			type: 'hidden' as NodePropertyTypes,
-			default: '',
+			default: 'access_type=offline',
 		},
 		{
             displayName: 'Authentication',
             name: 'authentication',
-            type: 'options' as NodePropertyTypes,
-            options: [
-                {
-                    name: 'Body',
-                    value: 'body',
-                    description: 'Send credentials in body',
-                },
-                {
-                    name: 'Header',
-                    value: 'header',
-                    description: 'Send credentials as Basic Auth header',
-                },
-            ],
+            type: 'hidden' as NodePropertyTypes,
             default: 'body',
             description: 'Resource to consume.',
         },

@@ -143,12 +143,13 @@ export function requestOAuth2(this: IAllExecuteFunctions, credentialsType: strin
 	const token = oAuthClient.createToken(get(oauthTokenData, property as string) || oauthTokenData.accessToken, oauthTokenData.refreshToken, tokenType || oauthTokenData.tokenType, oauthTokenData);
 	// Signs the request by adding authorization headers or query parameters depending
 	// on the token-type used.
-	const newRequestOptions = token.sign(requestOptions as clientOAuth2.RequestObject);
 
+	const newRequestOptions = token.sign(requestOptions as clientOAuth2.RequestObject);
 	// If keep bearer is false remove the it from the authorization header
 	if (!keepBearer) {
+		const newAuthorization = (newRequestOptions?.headers?.Authorization as string).split(' ')[1];
 		//@ts-ignore
-		newRequestOptions?.headers?.Authorization = newRequestOptions?.headers?.Authorization.split(' ')[1];
+		newRequestOptions?.headers?.Authorization = newAuthorization;
 	}
 
 	return this.helpers.request!(newRequestOptions)

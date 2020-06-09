@@ -41,9 +41,9 @@ export async function clickupApiRequest(this: IHookFunctions | IExecuteFunctions
 			return await this.helpers.request!(options);
 
 		} else {
-			return await this.helpers.requestOAuth2!.call(this, 'clickUpOAuth2Api', options);
+			//@ts-ignore
+			return await this.helpers.requestOAuth2.call(this, 'clickUpOAuth2Api', options, false, 'bearer');
 		}
-
 	} catch(error) {
 		let errorMessage = error;
 		if (error.err) {
