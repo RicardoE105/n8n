@@ -20,7 +20,7 @@ class CredentialsOverwritesClass {
 			return;
 		}
 
-		const data = await GenericHelpers.getConfigValue('credentials.overwrite') as string;
+		const data = await GenericHelpers.getConfigValue('credentials.overwrite.data') as string;
 
 		try {
 			this.overwriteData = JSON.parse(data);

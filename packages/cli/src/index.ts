@@ -4,6 +4,7 @@ export * from './CredentialsOverwrites';
 export * from './ExternalHooks';
 export * from './Interfaces';
 export * from './LoadNodesAndCredentials';
+export * from './LoadPresetSecrets';
 export * from './NodeTypes';
 export * from './WorkflowCredentials';
 export * from './WorkflowRunner';

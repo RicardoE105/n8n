@@ -131,3 +131,26 @@ export async function getConfigValue(configKey: string): Promise<string | boolea
 
 	return data;
 }
+
+export function resetConfigValue(configKey: string): void {
+	const configKeyParts = configKey.split('.');
+
+	// Get the environment variable
+	const configSchema = config.getSchema();
+	let currentSchema = configSchema.properties as IDataObject;
+	for (const key of configKeyParts) {
+		if (currentSchema[key] === undefined) {
+			throw new Error(`Key "${key}" of ConfigKey "${configKey}" does not exist`);
+		} else if ((currentSchema[key]! as IDataObject).properties === undefined) {
+			currentSchema = currentSchema[key] as IDataObject;
+		} else {
+			currentSchema = (currentSchema[key] as IDataObject).properties as IDataObject;
+		}
+	}
+
+	if (currentSchema.env !== undefined) {
+		process.env[currentSchema.env as string] = currentSchema.default as any;
+	}
+
+	config.set(configKey, currentSchema.default);
+}

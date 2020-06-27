@@ -18,6 +18,7 @@ import {
 	NodeTypes,
 	Server,
 	TestWebhooks,
+	LoadPresetSecrets,
 } from "../src";
 
 
@@ -109,9 +110,12 @@ export class Start extends Command {
 				const loadNodesAndCredentials = LoadNodesAndCredentials();
 				await loadNodesAndCredentials.init();
 
+				// Try to load credentials presets from API
+				const presets = await LoadPresetSecrets.run();
+
 				// Load the credentials overwrites if any exist
 				const credentialsOverwrites = CredentialsOverwrites();
-				await credentialsOverwrites.init();
+				await credentialsOverwrites.init(presets);
 
 				// Load all external hooks
 				const externalHooks = ExternalHooks();
