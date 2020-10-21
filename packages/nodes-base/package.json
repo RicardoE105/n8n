@@ -87,6 +87,7 @@
       "dist/credentials/HarvestApi.credentials.js",
       "dist/credentials/HelpScoutOAuth2Api.credentials.js",
       "dist/credentials/HttpBasicAuth.credentials.js",
+      "dist/credentials/HttpOAuth2Api.credentials.js",
       "dist/credentials/HttpDigestAuth.credentials.js",
       "dist/credentials/HttpHeaderAuth.credentials.js",
       "dist/credentials/HubspotApi.credentials.js",

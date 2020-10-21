@@ -83,7 +83,7 @@ export class HttpRequest implements INodeType {
 				},
 			},
 			{
-				name: 'oAuth2Api',
+				name: 'httpOAuth2Api',
 				required: true,
 				displayOptions: {
 					show: {
@@ -825,7 +825,8 @@ export class HttpRequest implements INodeType {
 			if (oAuth1Api !== undefined) {
 				requestPromises.push(this.helpers.requestOAuth1.call(this, 'oAuth1Api', requestOptions));
 			} else if (oAuth2Api !== undefined) {
-				requestPromises.push(this.helpers.requestOAuth2.call(this, 'oAuth2Api', requestOptions, { tokenType: 'Bearer' }));
+				const credentials = this.getCredentials('oAuth2Api') as IDataObject;
+				requestPromises.push(this.helpers.requestOAuth2.call(this, 'oAuth2Api', requestOptions, { tokenType: 'Bearer', includeCredentialsOnRefreshOnBody: credentials.includeCredentialsOnBody as boolean }));
 			} else {
 				requestPromises.push(this.helpers.request(requestOptions));
 			}
