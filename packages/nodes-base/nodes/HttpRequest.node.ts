@@ -594,7 +594,7 @@ export class HttpRequest implements INodeType {
 		const httpDigestAuth = this.getCredentials('httpDigestAuth');
 		const httpHeaderAuth = this.getCredentials('httpHeaderAuth');
 		const oAuth1Api = this.getCredentials('oAuth1Api');
-		const oAuth2Api = this.getCredentials('oAuth2Api');
+		const oAuth2Api = this.getCredentials('httpOAuth2Api');
 
 		let requestOptions: OptionsWithUri;
 		let setUiParameter: IDataObject;
@@ -825,8 +825,8 @@ export class HttpRequest implements INodeType {
 			if (oAuth1Api !== undefined) {
 				requestPromises.push(this.helpers.requestOAuth1.call(this, 'oAuth1Api', requestOptions));
 			} else if (oAuth2Api !== undefined) {
-				const credentials = this.getCredentials('oAuth2Api') as IDataObject;
-				requestPromises.push(this.helpers.requestOAuth2.call(this, 'oAuth2Api', requestOptions, { tokenType: 'Bearer', includeCredentialsOnRefreshOnBody: credentials.includeCredentialsOnBody as boolean }));
+				const credentials = this.getCredentials('httpOAuth2Api') as IDataObject;
+				requestPromises.push(this.helpers.requestOAuth2.call(this, 'httpOAuth2Api', requestOptions, { tokenType: 'Bearer', includeCredentialsOnRefreshOnBody: credentials.includeCredentialsOnBody as boolean }));
 			} else {
 				requestPromises.push(this.helpers.request(requestOptions));
 			}
