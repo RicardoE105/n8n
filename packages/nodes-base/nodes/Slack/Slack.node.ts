@@ -514,22 +514,26 @@ export class Slack implements INodeType {
 			}
 			if (resource === 'message') {
 				//https://api.slack.com/methods/chat.postMessage
-				if (operation === 'post') {
+				if (['post', 'postEphemeral'].includes(operation)) {
 					const channel = this.getNodeParameter('channel', i) as string;
+					const { sendAsUser } = this.getNodeParameter('otherOptions', i) as IDataObject;
 					const text = this.getNodeParameter('text', i) as string;
 					const body: IDataObject = {
 						channel,
 						text,
 					};
 
+					let action = 'postMessage';
+
+					if (operation === 'postEphemeral') {
+						body.user = this.getNodeParameter('user', i) as string;
+						action = 'postEphemeral';
+					}
+
 					const jsonParameters = this.getNodeParameter('jsonParameters', i) as boolean;
 
-					if (authentication === 'accessToken') {
-						body.as_user = this.getNodeParameter('as_user', i) as boolean;
-					}
-					if (body.as_user === false) {
-						body.username = this.getNodeParameter('username', i) as string;
-						delete body.as_user;
+					if (authentication === 'accessToken' && sendAsUser !== '') {
+						body.username = sendAsUser;
 					}
 
 					if (!jsonParameters) {
@@ -752,10 +756,11 @@ export class Slack implements INodeType {
 							body.blocks = blocksJson;
 						}
 					}
+
 					// Add all the other options to the request
 					const otherOptions = this.getNodeParameter('otherOptions', i) as IDataObject;
 					Object.assign(body, otherOptions);
-					responseData = await slackApiRequest.call(this, 'POST', '/chat.postMessage', body, qs);
+					responseData = await slackApiRequest.call(this, 'POST', `/chat.${action}`, body, qs);
 				}
 				//https://api.slack.com/methods/chat.update
 				if (operation === 'update') {
