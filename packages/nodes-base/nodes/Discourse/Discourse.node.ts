@@ -12,7 +12,6 @@ import {
 
 import {
 	discourseApiRequest,
-	discourseApiRequestAllItems,
 } from './GenericFunctions';
 
 import {
@@ -30,10 +29,20 @@ import {
 	groupOperations,
 } from './GroupDescription';
 
+// import {
+// 	searchFields,
+// 	searchOperations,
+// } from './SearchDescription';
+
 import {
-	searchFields,
-	searchOperations,
-} from './SearchDescription';
+	userFields,
+	userOperations,
+} from './UserDescription';
+
+import {
+	userGroupFields,
+	userGroupOperations,
+} from './UserGroupDescription';
 
 //import * as moment from 'moment';
 
@@ -76,9 +85,17 @@ export class Discourse implements INodeType {
 						name: 'Post',
 						value: 'post',
 					},
+					// {
+					// 	name: 'Search',
+					// 	value: 'search',
+					// },
 					{
-						name: 'Search',
-						value: 'search',
+						name: 'User',
+						value: 'user',
+					},
+					{
+						name: 'User Group',
+						value: 'userGroup',
 					},
 				],
 				default: 'post',
@@ -90,8 +107,12 @@ export class Discourse implements INodeType {
 			...groupFields,
 			...postOperations,
 			...postFields,
-			...searchOperations,
-			...searchFields,
+			// ...searchOperations,
+			// ...searchFields,
+			...userOperations,
+			...userFields,
+			...userGroupOperations,
+			...userGroupFields,
 		],
 	};
 
@@ -204,9 +225,11 @@ export class Discourse implements INodeType {
 					responseData = await discourseApiRequest.call(
 						this,
 						'POST',
-						`/groups.json`,
+						`/admin/groups.json`,
 						{ group: body },
 					);
+
+					responseData = responseData.basic_group;
 				}
 				//https://docs.discourse.org/#tag/Groups/paths/~1groups~1{name}.json/get
 				if (operation === 'get') {
@@ -331,78 +354,132 @@ export class Discourse implements INodeType {
 					);
 				}
 			}
-			if (resource === 'search') {
-				//https://docs.discourse.org/#tag/Search/paths/~1search~1query/get
-				if (operation === 'query') {
-					qs.term = this.getNodeParameter('term', i) as string;
+			// TODO figure how to paginate the results
+			// if (resource === 'search') {
+			// 	//https://docs.discourse.org/#tag/Search/paths/~1search~1query/get
+			// 	if (operation === 'query') {
+			// 		qs.term = this.getNodeParameter('term', i) as string;
 
-					const simple = this.getNodeParameter('simple', i) as boolean;
+			// 		const simple = this.getNodeParameter('simple', i) as boolean;
 
-					const updateFields = this.getNodeParameter('updateFields', i) as IDataObject;
+			// 		const updateFields = this.getNodeParameter('updateFields', i) as IDataObject;
 
-					Object.assign(qs, updateFields);
+			// 		Object.assign(qs, updateFields);
 
-					qs.page = 1;
+			// 		qs.page = 1;
+
+			// 		responseData = await discourseApiRequest.call(
+			// 			this,
+			// 			'GET',
+			// 			`/search/query`,
+			// 			{},
+			// 			qs,
+			// 		);
+
+			// 		if (simple === true) {
+			// 			const response = [];
+			// 			for (const key of Object.keys(responseData)) {
+			// 				console.log(key)
+			// 				for (const data of responseData[key]) {
+			// 					response.push(Object.assign(data, { __type: key }));
+			// 				}
+			// 			}
+			// 			responseData = response;
+			// 		}
+			// 	}
+			// }
+			if (resource === 'user') {
+				//https://docs.discourse.org/#tag/Users/paths/~1users/post
+				if (operation === 'create') {
+					const  name = this.getNodeParameter('name', i) as string;
+					const email = this.getNodeParameter('email', i) as string;
+					const password = this.getNodeParameter('password', i) as string;
+					const username = this.getNodeParameter('username', i) as string;
+					const additionalFields = this.getNodeParameter('additionalFields', i) as IDataObject;
+					
+					const body: IDataObject = {
+						name,
+						password,
+						email,
+						username,
+					};
+
+					Object.assign(body, additionalFields);
 
 					responseData = await discourseApiRequest.call(
 						this,
-						'GET',
-						`/search/query`,
-						{},
-						qs,
+						'POST',
+						`/users.json`,
+						body,
 					);
-
-					console.log(Object.keys(responseData));
-
-					qs.page = 2;
-
-					responseData = await discourseApiRequest.call(
-						this,
-						'GET',
-						`/search/query`,
-						{},
-						qs,
-					);
-
-					console.log(Object.keys(responseData));
-
-
-					qs.page = 3;
-
-					responseData = await discourseApiRequest.call(
-						this,
-						'GET',
-						`/search/query`,
-						{},
-						qs,
-					);
-
-					console.log(Object.keys(responseData));
-
-					qs.page = 4;
-
-					responseData = await discourseApiRequest.call(
-						this,
-						'GET',
-						`/search/query`,
-						{},
-						qs,
-					);
-
-					console.log('aja')
-
-					console.log(Object.keys(responseData));
-
-					if (simple === true) {
-						const response = [];
-						for (const key of Object.keys(responseData)) {
-							console.log(key)
-							for (const data of responseData[key]) {
-								response.push(Object.assign(data, { __type: key }));
-							}
-						}
-						responseData = response;
+				}
+				//https://docs.discourse.org/#tag/Users/paths/~1users~1{username}.json/get
+				if (operation === 'get') {
+					const  by = this.getNodeParameter('by', i) as string;
+					let endpoint = '';
+					if (by === 'username') {
+						const  username = this.getNodeParameter('username', i) as string;
+						endpoint = `/users/${username}`;
+					} else if (by === 'externalId'){
+						const  externalId = this.getNodeParameter('externalId', i) as string;
+						endpoint = `/u/by-external/${externalId}.json`;
 					}
+
+					responseData = await discourseApiRequest.call(
+						this,
+						'GET',
+						endpoint,
+					);
+				}
+				//https://docs.discourse.org/#tag/Users/paths/~1admin~1users~1{id}.json/delete
+				if (operation === 'getAll') {
+					const returnAll = this.getNodeParameter('returnAll', i) as boolean;
+					const flag = this.getNodeParameter('flag', i) as boolean;
+					
+					responseData = await discourseApiRequest.call(
+						this,
+						'GET',
+						`/admin/users/list/${flag}.json`,
+						{},
+						qs,
+					);
+						
+					if (returnAll === false) {
+						const limit = this.getNodeParameter('limit', i) as number;
+						responseData = responseData.splice(0, limit);
+					}
+				}
+			}
+			if (resource === 'userGroup') {
+				//https://docs.discourse.org/#tag/Groups/paths/~1groups~1{group_id}~1members.json/put
+				if (operation === 'add') {
+					const  usernames = this.getNodeParameter('usernames', i) as string;
+					const groupId = this.getNodeParameter('groupId', i) as string;
+					const body: IDataObject = {
+						usernames,
+					};
+
+					responseData = await discourseApiRequest.call(
+						this,
+						'PUT',
+						`/groups/${groupId}/members.json`,
+						body,
+					);
+				}
+				//https://docs.discourse.org/#tag/Groups/paths/~1groups~1{group_id}~1members.json/delete
+				if (operation === 'remove') {
+					const  usernames = this.getNodeParameter('usernames', i) as string;
+					const groupId = this.getNodeParameter('groupId', i) as string;
+					const body: IDataObject = {
+						usernames,
+					};
+
+					responseData = await discourseApiRequest.call(
+						this,
+						'DELETE',
+						`/groups/${groupId}/members.json`,
+						body,
+					);
 				}
 			}
 		}

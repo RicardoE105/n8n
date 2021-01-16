@@ -66,29 +66,4 @@ export const searchFields: INodeProperties[] = [
 		default: true,
 		description: 'When set to true a simplify version of the response will be used else the raw data.',
 	},
-	{
-		displayName: 'Update Fields',
-		name: 'updateFields',
-		type: 'collection',
-		placeholder: 'Add Field',
-		default: {},
-		displayOptions: {
-			show: {
-				resource: [
-					'search',
-				],
-				operation: [
-					'query',
-				],
-			},
-		},
-		options: [
-			{
-				displayName: 'Include Blurbs',
-				name: 'include_blurbs',
-				type: 'boolean',
-				default: false,
-			},
-		],
-	},
 ];
